@@ -1,0 +1,82 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties/>
+  <scm class="hudson.plugins.git.GitSCM" plugin="git@3.0.0">
+    <configVersion>2</configVersion>
+    <userRemoteConfigs>
+      <hudson.plugins.git.UserRemoteConfig>
+        <url>https://github.com/albarki/DevOps_Task</url>
+      </hudson.plugins.git.UserRemoteConfig>
+    </userRemoteConfigs>
+    <branches>
+      <hudson.plugins.git.BranchSpec>
+        <name>*/master</name>
+      </hudson.plugins.git.BranchSpec>
+    </branches>
+    <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+    <submoduleCfg class="list"/>
+    <extensions/>
+  </scm>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers>
+    <com.cloudbees.jenkins.GitHubPushTrigger plugin="github@1.22.1">
+      <spec></spec>
+    </com.cloudbees.jenkins.GitHubPushTrigger>
+  </triggers>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command># make sure that there are no previous images/containers
+export DOCKER_HOST=tcp://localhost:4243
+docker ps -a | grep &apos;jenkinsbuild&apos; | awk &apos;{print $1}&apos; | xargs -r docker stop &amp;&amp; \
+docker ps -a | grep &apos;jenkinsbuild&apos; | awk &apos;{print $1}&apos; | xargs -r docker rm &amp;&amp; \
+docker images | grep &apos;jenkinsbuild&apos; | awk &apos;{print $1}&apos; | xargs -r docker rmi</command>
+    </hudson.tasks.Shell>
+    <hudson.tasks.Shell>
+      <command>export DOCKER_HOST=tcp://localhost:4243
+
+docker-compose -p jenkins_build up -d
+
+docker ps -a | grep &apos;jenkinsbuild&apos; 
+
+
+
+</command>
+    </hudson.tasks.Shell>
+    <hudson.tasks.Shell>
+      <command>##testing stage 
+##check if the app is working fine or not
+echo hello_world</command>
+    </hudson.tasks.Shell>
+    <hudson.tasks.Shell>
+      <command>##commit the images
+export DOCKER_HOST=tcp://localhost:4243
+docker commit jenkinsbuild_mysql_1 albarki/task_mysql_${BUILD_NUMBER}
+docker commit jenkinsbuild_webapp_1 albarki/task_webapp_${BUILD_NUMBER}</command>
+    </hudson.tasks.Shell>
+    <hudson.tasks.Shell>
+      <command>#push the images to docker hub
+##i will comment these steps cause it take alot of time to upload images
+export DOCKER_HOST=tcp://localhost:4243
+#docker login -u&lt;Username&gt; -p&lt;Password&gt;
+#docker push albarki/task_mysql_${BUILD_NUMBER}
+#docker push albarki/task_webapp_${BUILD_NUMBER}</command>
+    </hudson.tasks.Shell>
+    <hudson.tasks.Shell>
+      <command>#remove the images and clean up 
+export DOCKER_HOST=tcp://localhost:4243
+docker ps -a | grep &apos;jenkinsbuild&apos; | awk &apos;{print $1}&apos; | xargs -r docker stop &amp;&amp; \
+docker ps -a | grep &apos;jenkinsbuild&apos; | awk &apos;{print $1}&apos; | xargs -r docker rm &amp;&amp; \
+docker images | grep albarki/task_mysql_${BUILD_NUMBER} |awk &apos;{print $3}&apos; | xargs -r docker rmi &amp;&amp;\
+docker images | grep albarki/task_webapp_${BUILD_NUMBER} |awk &apos;{print $3}&apos;| xargs -r docker rmi </command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers/>
+  <buildWrappers/>
+</project>
